@@ -1,17 +1,17 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import type { EceTopic } from "./topics.js";
 
-const MODEL = "claude-sonnet-5";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-let client: Anthropic | null = null;
+let client: GoogleGenAI | null = null;
 
-function getClient(): Anthropic {
+function getClient(): GoogleGenAI {
   if (!client) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key.");
+      throw new Error("GEMINI_API_KEY is not set. Copy .env.example to .env and add your key.");
     }
-    client = new Anthropic({ apiKey });
+    client = new GoogleGenAI({ apiKey });
   }
   return client;
 }
@@ -39,20 +39,26 @@ export interface ChatMessage {
 }
 
 export async function runChat(messages: ChatMessage[], topic?: EceTopic): Promise<string> {
-  const anthropic = getClient();
-  const system = topic
+  const ai = getClient();
+  const systemInstruction = topic
     ? `${TUTOR_SYSTEM_PROMPT}\n\nThe student has selected the topic: "${topic}". Favor examples and terminology from that area unless they steer the conversation elsewhere.`
     : TUTOR_SYSTEM_PROMPT;
 
-  const response = await anthropic.messages.create({
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
+
+  const response = await ai.models.generateContent({
     model: MODEL,
-    max_tokens: 1500,
-    system,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    contents,
+    config: {
+      systemInstruction,
+      maxOutputTokens: 1500,
+    },
   });
 
-  const textBlock = response.content.find((block) => block.type === "text");
-  return textBlock && textBlock.type === "text" ? textBlock.text : "";
+  return response.text ?? "";
 }
 
 export interface QuizQuestion {
@@ -78,21 +84,23 @@ export async function generateQuiz(
   difficulty: "intro" | "intermediate" | "advanced",
   count: number
 ): Promise<QuizQuestion[]> {
-  const anthropic = getClient();
-  const response = await anthropic.messages.create({
+  const ai = getClient();
+  const response = await ai.models.generateContent({
     model: MODEL,
-    max_tokens: 2000,
-    system: QUIZ_SYSTEM_PROMPT,
-    messages: [
+    contents: [
       {
         role: "user",
-        content: `Topic: ${topic}\nDifficulty: ${difficulty}\nNumber of questions: ${count}`,
+        parts: [{ text: `Topic: ${topic}\nDifficulty: ${difficulty}\nNumber of questions: ${count}` }],
       },
     ],
+    config: {
+      systemInstruction: QUIZ_SYSTEM_PROMPT,
+      responseMimeType: "application/json",
+      maxOutputTokens: 2000,
+    },
   });
 
-  const textBlock = response.content.find((block) => block.type === "text");
-  const raw = textBlock && textBlock.type === "text" ? textBlock.text : "{}";
+  const raw = response.text ?? "{}";
 
   let parsed: { questions?: QuizQuestion[] };
   try {
