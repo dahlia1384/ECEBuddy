@@ -4,7 +4,8 @@ An AI study assistant for undergraduate Electrical & Computer Engineering course
 ECEBuddy answers concept questions across circuits, signals & systems, digital logic,
 electromagnetics, semiconductor devices, computer architecture, control systems,
 probability, embedded systems, and communication systems — and can generate practice
-quizzes on any of those topics.
+quizzes on any of those topics. Students can attach photos of their work or PDFs to a
+chat message, and the site includes a per-subject key-equations reference (KaTeX).
 
 Built with a Node/TypeScript + Express backend, a React + Vite frontend, and Google's
 Gemini API (free tier) as the tutoring agent.
@@ -44,7 +45,9 @@ ECEBuddy/
 ## API
 
 - `GET /api/topics` — list of supported ECE topics
-- `POST /api/chat` — `{ messages: {role, content}[], topic?: string }` → `{ reply: string }`
+- `POST /api/chat` — `{ messages: {role, content, attachments?}[], topic?: string }` → `{ reply: string }`.
+  Attachments are `{ mimeType, data (base64), name? }`, up to 4 per message, 8MB each
+  (`image/png`, `image/jpeg`, `image/webp`, `image/heic`, `image/heif`, `application/pdf`).
 - `POST /api/quiz` — `{ topic: string, difficulty?: "intro"|"intermediate"|"advanced", count?: number }` → `{ questions: QuizQuestion[] }`
 
 ## Notes
