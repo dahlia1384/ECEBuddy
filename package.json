@@ -1,0 +1,16 @@
+{
+  "name": "ecebuddy",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI study assistant for Electrical & Computer Engineering coursework",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "dev": "npm run dev:server & npm run dev:client",
+    "build": "npm run build --workspace server && npm run build --workspace client"
+  }
+}
