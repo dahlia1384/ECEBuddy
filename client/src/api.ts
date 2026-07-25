@@ -1,6 +1,24 @@
+export const ATTACHMENT_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+] as const;
+
+export type AttachmentMimeType = (typeof ATTACHMENT_MIME_TYPES)[number];
+
+export interface Attachment {
+  mimeType: AttachmentMimeType;
+  data: string;
+  name?: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  attachments?: Attachment[];
 }
 
 export async function fetchTopics(): Promise<string[]> {

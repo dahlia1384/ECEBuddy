@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import type { EceTopic } from "./topics.js";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 let client: GoogleGenAI | null = null;
 
@@ -14,6 +14,18 @@ function getClient(): GoogleGenAI {
     client = new GoogleGenAI({ apiKey });
   }
   return client;
+}
+
+function cleanGeminiError(err: unknown): Error {
+  const raw = err instanceof Error ? err.message : String(err);
+  try {
+    const parsed = JSON.parse(raw);
+    const message = parsed?.error?.message;
+    if (typeof message === "string") return new Error(message);
+  } catch {
+    // raw wasn't JSON — fall through and use it as-is
+  }
+  return new Error(raw);
 }
 
 const TUTOR_SYSTEM_PROMPT = `You are ECEBuddy, a patient, encouraging study tutor for undergraduate
@@ -33,9 +45,31 @@ Guidelines:
   student pastes what looks like a live exam or quiz question, help them understand the underlying
   concept rather than just supplying the final answer.`;
 
+export const ATTACHMENT_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "application/pdf",
+] as const;
+
+export type AttachmentMimeType = (typeof ATTACHMENT_MIME_TYPES)[number];
+
+export function isAttachmentMimeType(value: string): value is AttachmentMimeType {
+  return (ATTACHMENT_MIME_TYPES as readonly string[]).includes(value);
+}
+
+export interface Attachment {
+  mimeType: AttachmentMimeType;
+  data: string;
+  name?: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  attachments?: Attachment[];
 }
 
 export async function runChat(messages: ChatMessage[], topic?: EceTopic): Promise<string> {
@@ -46,19 +80,27 @@ export async function runChat(messages: ChatMessage[], topic?: EceTopic): Promis
 
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
+    parts: [
+      ...(m.attachments ?? []).map((a) => ({
+        inlineData: { mimeType: a.mimeType, data: a.data },
+      })),
+      ...(m.content ? [{ text: m.content }] : []),
+    ],
   }));
 
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents,
-    config: {
-      systemInstruction,
-      maxOutputTokens: 1500,
-    },
-  });
-
-  return response.text ?? "";
+  try {
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents,
+      config: {
+        systemInstruction,
+        maxOutputTokens: 1500,
+      },
+    });
+    return response.text ?? "";
+  } catch (err) {
+    throw cleanGeminiError(err);
+  }
 }
 
 export interface QuizQuestion {
@@ -85,20 +127,25 @@ export async function generateQuiz(
   count: number
 ): Promise<QuizQuestion[]> {
   const ai = getClient();
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: `Topic: ${topic}\nDifficulty: ${difficulty}\nNumber of questions: ${count}` }],
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: MODEL,
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `Topic: ${topic}\nDifficulty: ${difficulty}\nNumber of questions: ${count}` }],
+        },
+      ],
+      config: {
+        systemInstruction: QUIZ_SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        maxOutputTokens: 2000,
       },
-    ],
-    config: {
-      systemInstruction: QUIZ_SYSTEM_PROMPT,
-      responseMimeType: "application/json",
-      maxOutputTokens: 2000,
-    },
-  });
+    });
+  } catch (err) {
+    throw cleanGeminiError(err);
+  }
 
   const raw = response.text ?? "{}";
 
