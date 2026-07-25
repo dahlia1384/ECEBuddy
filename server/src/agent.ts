@@ -94,7 +94,8 @@ export async function runChat(messages: ChatMessage[], topic?: EceTopic): Promis
       contents,
       config: {
         systemInstruction,
-        maxOutputTokens: 1500,
+        maxOutputTokens: 2500,
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
     return response.text ?? "";
@@ -140,7 +141,8 @@ export async function generateQuiz(
       config: {
         systemInstruction: QUIZ_SYSTEM_PROMPT,
         responseMimeType: "application/json",
-        maxOutputTokens: 2000,
+        maxOutputTokens: 3000,
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
   } catch (err) {
