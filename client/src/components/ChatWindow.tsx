@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import type { ChatMessage } from "../api";
 import { sendChat } from "../api";
 import { fileToAttachment, MAX_ATTACHMENTS, type PendingAttachment } from "../fileUtils";
+import { addChatToProject } from "../storage";
 import AttachmentChip from "./AttachmentChip";
+import SaveToProjectButton from "./SaveToProjectButton";
 
 interface Props {
   topic: string;
@@ -85,6 +89,14 @@ export default function ChatWindow({ topic }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      {messages.length > 0 && (
+        <div className="flex justify-end">
+          <SaveToProjectButton
+            label="Save conversation"
+            onSave={(project) => addChatToProject(project.id, topic, messages)}
+          />
+        </div>
+      )}
       <div className="flex h-[420px] flex-col gap-3 overflow-y-auto pr-1">
         {messages.length === 0 && (
           <p className="m-auto text-center text-sm text-slate-400 dark:text-slate-500">
@@ -125,7 +137,9 @@ export default function ChatWindow({ topic }: Props) {
             {m.content &&
               (m.role === "assistant" ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-pre:my-2">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {m.content}
+                  </ReactMarkdown>
                 </div>
               ) : (
                 <span className="whitespace-pre-wrap">{m.content}</span>

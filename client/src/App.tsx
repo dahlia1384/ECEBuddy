@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import TopicsSection from "./components/TopicsSection";
 import HowItWorks from "./components/HowItWorks";
 import EquationsSection from "./components/EquationsSection";
+import ProjectsSection from "./components/ProjectsSection";
 
 type Mode = "chat" | "quiz";
 
@@ -113,6 +114,8 @@ export default function App() {
           {topic && mode === "chat" && <ChatWindow topic={topic} />}
           {topic && mode === "quiz" && <QuizPanel topic={topic} />}
         </main>
+
+        {topics.length > 0 && <ProjectsSection topics={topics} />}
 
         <TopicsSection
           selected={topic}

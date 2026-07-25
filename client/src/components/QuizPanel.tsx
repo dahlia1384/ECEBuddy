@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { QuizQuestion } from "../api";
 import { fetchQuiz } from "../api";
+import { addQuizToProject } from "../storage";
+import SaveToProjectButton from "./SaveToProjectButton";
 
 interface Props {
   topic: string;
@@ -53,6 +55,15 @@ export default function QuizPanel({ topic }: Props) {
         >
           {loading ? "Generating…" : `Generate ${topic} quiz`}
         </button>
+        {questions.length > 0 && (
+          <SaveToProjectButton
+            label="Save results"
+            onSave={(project) => {
+              const score = questions.filter((q, i) => answers[i] === q.correctIndex).length;
+              addQuizToProject(project.id, topic, { difficulty, questions, answers, score });
+            }}
+          />
+        )}
       </div>
 
       {error && (
