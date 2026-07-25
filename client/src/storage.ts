@@ -33,7 +33,6 @@ export interface Project {
   topics: Record<string, ProjectTopicData>;
 }
 
-const STORAGE_KEY = "ecebuddy.projects.v1";
 const CHANGE_EVENT = "ecebuddy:projects-changed";
 
 export function onProjectsChanged(listener: () => void): () => void {
@@ -45,115 +44,71 @@ function notifyChanged() {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-function emptyTopicData(): ProjectTopicData {
-  return { files: [], chats: [], quizzes: [] };
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api/projects${path}`, {
+    credentials: "include",
+    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+    ...init,
+  });
+  if (res.status === 204) return undefined as T;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? "Request failed");
+  return data as T;
 }
 
-function makeId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+export async function loadProjects(): Promise<Project[]> {
+  const data = await request<{ projects: Project[] }>("");
+  return data.projects;
 }
 
-export function loadProjects(): Project[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Project[];
-  } catch {
-    return [];
-  }
+export async function createProject(name: string): Promise<Project> {
+  const data = await request<{ project: Project }>("", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  notifyChanged();
+  return data.project;
 }
 
-function saveProjects(projects: Project[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+export async function deleteProject(id: string): Promise<void> {
+  await request<void>(`/${id}`, { method: "DELETE" });
   notifyChanged();
 }
 
-function updateProject(id: string, updater: (p: Project) => Project) {
-  const projects = loadProjects();
-  const idx = projects.findIndex((p) => p.id === id);
-  if (idx === -1) return;
-  const next = [...projects];
-  next[idx] = updater(projects[idx]);
-  saveProjects(next);
-}
-
-function getTopicData(project: Project, topic: string): ProjectTopicData {
-  return project.topics[topic] ?? emptyTopicData();
-}
-
-export function createProject(name: string): Project {
-  const projects = loadProjects();
-  const project: Project = { id: makeId(), name, createdAt: Date.now(), topics: {} };
-  saveProjects([...projects, project]);
-  return project;
-}
-
-export function renameProject(id: string, name: string) {
-  updateProject(id, (p) => ({ ...p, name }));
-}
-
-export function deleteProject(id: string) {
-  saveProjects(loadProjects().filter((p) => p.id !== id));
-}
-
-export function addFilesToProject(
+export async function addFilesToProject(
   projectId: string,
   topic: string,
   files: Array<Omit<SavedFile, "id" | "savedAt">>
-) {
-  updateProject(projectId, (p) => {
-    const topicData = getTopicData(p, topic);
-    const newFiles: SavedFile[] = files.map((f) => ({ ...f, id: makeId(), savedAt: Date.now() }));
-    return { ...p, topics: { ...p.topics, [topic]: { ...topicData, files: [...topicData.files, ...newFiles] } } };
-  });
+): Promise<void> {
+  await request(`/${projectId}/files`, { method: "POST", body: JSON.stringify({ topic, files }) });
+  notifyChanged();
 }
 
-export function removeFileFromProject(projectId: string, topic: string, fileId: string) {
-  updateProject(projectId, (p) => {
-    const topicData = getTopicData(p, topic);
-    return {
-      ...p,
-      topics: { ...p.topics, [topic]: { ...topicData, files: topicData.files.filter((f) => f.id !== fileId) } },
-    };
-  });
+export async function removeFileFromProject(projectId: string, topic: string, fileId: string): Promise<void> {
+  await request(`/${projectId}/files/${fileId}?topic=${encodeURIComponent(topic)}`, { method: "DELETE" });
+  notifyChanged();
 }
 
-export function addChatToProject(projectId: string, topic: string, messages: ChatMessage[]) {
-  updateProject(projectId, (p) => {
-    const topicData = getTopicData(p, topic);
-    const chat: SavedChat = { id: makeId(), messages, savedAt: Date.now() };
-    return { ...p, topics: { ...p.topics, [topic]: { ...topicData, chats: [chat, ...topicData.chats] } } };
-  });
+export async function addChatToProject(projectId: string, topic: string, messages: ChatMessage[]): Promise<void> {
+  await request(`/${projectId}/chats`, { method: "POST", body: JSON.stringify({ topic, messages }) });
+  notifyChanged();
 }
 
-export function removeChatFromProject(projectId: string, topic: string, chatId: string) {
-  updateProject(projectId, (p) => {
-    const topicData = getTopicData(p, topic);
-    return {
-      ...p,
-      topics: { ...p.topics, [topic]: { ...topicData, chats: topicData.chats.filter((c) => c.id !== chatId) } },
-    };
-  });
+export async function removeChatFromProject(projectId: string, topic: string, chatId: string): Promise<void> {
+  await request(`/${projectId}/chats/${chatId}?topic=${encodeURIComponent(topic)}`, { method: "DELETE" });
+  notifyChanged();
 }
 
-export function addQuizToProject(
+export async function addQuizToProject(
   projectId: string,
   topic: string,
   attempt: Omit<SavedQuizAttempt, "id" | "savedAt">
-) {
-  updateProject(projectId, (p) => {
-    const topicData = getTopicData(p, topic);
-    const saved: SavedQuizAttempt = { ...attempt, id: makeId(), savedAt: Date.now() };
-    return { ...p, topics: { ...p.topics, [topic]: { ...topicData, quizzes: [saved, ...topicData.quizzes] } } };
-  });
+): Promise<void> {
+  await request(`/${projectId}/quizzes`, { method: "POST", body: JSON.stringify({ topic, ...attempt }) });
+  notifyChanged();
 }
 
-export function removeQuizFromProject(projectId: string, topic: string, quizId: string) {
-  updateProject(projectId, (p) => {
-    const topicData = getTopicData(p, topic);
-    return {
-      ...p,
-      topics: { ...p.topics, [topic]: { ...topicData, quizzes: topicData.quizzes.filter((q) => q.id !== quizId) } },
-    };
-  });
+export async function removeQuizFromProject(projectId: string, topic: string, quizId: string): Promise<void> {
+  await request(`/${projectId}/quizzes/${quizId}?topic=${encodeURIComponent(topic)}`, { method: "DELETE" });
+  notifyChanged();
 }

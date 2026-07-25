@@ -6,9 +6,12 @@ electromagnetics, semiconductor devices, computer architecture, control systems,
 probability, embedded systems, and communication systems — and can generate practice
 quizzes on any of those topics. Students can attach photos of their work or PDFs to a
 chat message, and the site includes a per-subject key-equations reference (KaTeX).
+Signed-in students can also save chats, quiz results, and files into named
+projects/courses, organized by topic.
 
-Built with a Node/TypeScript + Express backend, a React + Vite frontend, and Google's
-Gemini API (free tier) as the tutoring agent.
+Built with a Node/TypeScript + Express backend, a React + Vite frontend, SQLite for
+accounts/project storage, and Google's Gemini API (free tier) as the tutoring agent.
+An account is required to use the app.
 
 ## Structure
 
@@ -27,12 +30,15 @@ ECEBuddy/
    ```
 
 2. Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey),
-   then add it:
+   then set up your environment:
 
    ```bash
    cp server/.env.example server/.env
-   # then edit server/.env and set GEMINI_API_KEY
+   # edit server/.env: set GEMINI_API_KEY, and set JWT_SECRET to a long random string
    ```
+
+   `JWT_SECRET` signs login sessions. If left unset, a random one is generated per
+   process start, which invalidates all sessions on every server restart.
 
 3. Run both the server and client in dev mode:
 
@@ -44,11 +50,19 @@ ECEBuddy/
 
 ## API
 
+Public:
 - `GET /api/topics` — list of supported ECE topics
+- `POST /api/auth/signup` / `POST /api/auth/login` — `{ username, password }` → sets an
+  httpOnly session cookie
+- `POST /api/auth/logout`, `GET /api/auth/me`
+
+Require a signed-in session (cookie-based):
 - `POST /api/chat` — `{ messages: {role, content, attachments?}[], topic?: string }` → `{ reply: string }`.
   Attachments are `{ mimeType, data (base64), name? }`, up to 4 per message, 8MB each
   (`image/png`, `image/jpeg`, `image/webp`, `image/heic`, `image/heif`, `application/pdf`).
 - `POST /api/quiz` — `{ topic: string, difficulty?: "intro"|"intermediate"|"advanced", count?: number }` → `{ questions: QuizQuestion[] }`
+- `/api/projects` — CRUD for projects and the files/chats/quizzes saved under them,
+  scoped to the signed-in user and stored in `server/data/ecebuddy.db` (SQLite).
 
 ## Notes
 

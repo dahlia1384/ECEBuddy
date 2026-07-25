@@ -8,6 +8,8 @@ import TopicsSection from "./components/TopicsSection";
 import HowItWorks from "./components/HowItWorks";
 import EquationsSection from "./components/EquationsSection";
 import ProjectsSection from "./components/ProjectsSection";
+import LoginPage from "./components/LoginPage";
+import { useAuth } from "./AuthContext";
 
 type Mode = "chat" | "quiz";
 
@@ -28,6 +30,7 @@ function QuizIcon() {
 }
 
 export default function App() {
+  const { user, loading, logout } = useAuth();
   const [topics, setTopics] = useState<string[]>([]);
   const [topic, setTopic] = useState<string>("");
   const [mode, setMode] = useState<Mode>("chat");
@@ -41,19 +44,38 @@ export default function App() {
       .catch(() => setTopics([]));
   }, []);
 
+  if (loading) {
+    return <div className="min-h-screen" />;
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14">
         <header className="space-y-4 text-center sm:text-left">
-          <div className="flex items-center justify-center gap-3 sm:justify-start">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-base font-bold text-white shadow-lg shadow-indigo-500/30">
-              EB
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-base font-bold text-white shadow-lg shadow-indigo-500/30">
+                EB
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                <span className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-fuchsia-400">
+                  ECEBuddy
+                </span>
+              </h1>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              <span className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-fuchsia-400">
-                ECEBuddy
-              </span>
-            </h1>
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <span>{user.username}</span>
+              <button
+                onClick={() => logout()}
+                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-800 dark:hover:border-indigo-700 dark:hover:text-indigo-400"
+              >
+                Log out
+              </button>
+            </div>
           </div>
           <p className="mx-auto max-w-xl text-sm text-slate-500 sm:mx-0 sm:text-base dark:text-slate-400">
             Your AI study partner for Electrical &amp; Computer Engineering coursework —

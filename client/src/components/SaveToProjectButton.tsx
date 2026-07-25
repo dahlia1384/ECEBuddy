@@ -2,7 +2,7 @@ import { useState } from "react";
 import { loadProjects, createProject, type Project } from "../storage";
 
 interface Props {
-  onSave: (project: Project) => void;
+  onSave: (project: Project) => void | Promise<void>;
   label?: string;
 }
 
@@ -11,10 +11,16 @@ export default function SaveToProjectButton({ onSave, label = "Save to project" 
   const [projects, setProjects] = useState<Project[]>([]);
   const [newName, setNewName] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function openPicker() {
-    setProjects(loadProjects());
+  async function openPicker() {
+    setError(null);
     setOpen(true);
+    try {
+      setProjects(await loadProjects());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load projects");
+    }
   }
 
   function flashSaved() {
@@ -22,20 +28,28 @@ export default function SaveToProjectButton({ onSave, label = "Save to project" 
     setTimeout(() => setSavedFlash(false), 2000);
   }
 
-  function handlePick(project: Project) {
-    onSave(project);
+  async function handlePick(project: Project) {
     setOpen(false);
-    flashSaved();
+    try {
+      await onSave(project);
+      flashSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save");
+    }
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     const name = newName.trim();
     if (!name) return;
-    const project = createProject(name);
-    onSave(project);
-    setNewName("");
-    setOpen(false);
-    flashSaved();
+    try {
+      const project = await createProject(name);
+      await onSave(project);
+      setNewName("");
+      setOpen(false);
+      flashSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create project");
+    }
   }
 
   return (
@@ -51,6 +65,7 @@ export default function SaveToProjectButton({ onSave, label = "Save to project" 
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-20 mt-2 w-64 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-800 dark:bg-slate-900">
             <p className="mb-1.5 px-1 text-xs font-medium text-slate-400">Save to…</p>
+            {error && <p className="mb-1.5 px-1 text-xs text-red-500">{error}</p>}
             <div className="max-h-40 overflow-y-auto">
               {projects.length === 0 && (
                 <p className="px-1 py-1 text-xs text-slate-400">No projects yet — create one below.</p>

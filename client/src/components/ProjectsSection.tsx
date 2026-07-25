@@ -9,9 +9,14 @@ interface Props {
 export default function ProjectsSection({ topics }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newName, setNewName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  function refresh() {
-    setProjects(loadProjects());
+  async function refresh() {
+    try {
+      setProjects(await loadProjects());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load projects");
+    }
   }
 
   useEffect(() => {
@@ -19,11 +24,15 @@ export default function ProjectsSection({ topics }: Props) {
     return onProjectsChanged(refresh);
   }, []);
 
-  function handleCreate() {
+  async function handleCreate() {
     const name = newName.trim();
     if (!name) return;
-    createProject(name);
-    setNewName("");
+    try {
+      await createProject(name);
+      setNewName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create project");
+    }
   }
 
   return (
@@ -31,8 +40,8 @@ export default function ProjectsSection({ topics }: Props) {
       <div className="mb-4 flex flex-col gap-1">
         <h2 className="text-lg font-semibold tracking-tight">Projects &amp; courses</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Group your files, saved chats, and quiz results by course — everything is stored in this
-          browser. Use "Save to project" from a chat or quiz, or add files directly here.
+          Group your files, saved chats, and quiz results by course — saved to your account. Use
+          "Save to project" from a chat or quiz, or add files directly here.
         </p>
       </div>
 
@@ -52,6 +61,12 @@ export default function ProjectsSection({ topics }: Props) {
           New project
         </button>
       </div>
+
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+          {error}
+        </p>
+      )}
 
       {projects.length === 0 ? (
         <p className="text-sm text-slate-400">

@@ -48,11 +48,52 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
       .map(({ value }) => ({ mimeType: value.mimeType, data: value.data, name: value.name }));
     const failed = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
     if (succeeded.length > 0) {
-      addFilesToProject(project.id, uploadTopic, succeeded);
-      onChanged();
+      try {
+        await addFilesToProject(project.id, uploadTopic, succeeded);
+        onChanged();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save files");
+      }
     }
     if (failed.length > 0) {
       setError(failed.map((f) => f.reason?.message ?? "Failed to add file").join(" "));
+    }
+  }
+
+  async function handleDeleteProject() {
+    if (!confirm(`Delete project "${project.name}"? This can't be undone.`)) return;
+    try {
+      await deleteProject(project.id);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete project");
+    }
+  }
+
+  async function handleRemoveFile(topic: string, fileId: string) {
+    try {
+      await removeFileFromProject(project.id, topic, fileId);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove file");
+    }
+  }
+
+  async function handleRemoveChat(topic: string, chatId: string) {
+    try {
+      await removeChatFromProject(project.id, topic, chatId);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove chat");
+    }
+  }
+
+  async function handleRemoveQuiz(topic: string, quizId: string) {
+    try {
+      await removeQuizFromProject(project.id, topic, quizId);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove quiz");
     }
   }
 
@@ -112,12 +153,7 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
               + Add files to this topic
             </button>
             <button
-              onClick={() => {
-                if (confirm(`Delete project "${project.name}"? This can't be undone.`)) {
-                  deleteProject(project.id);
-                  onChanged();
-                }
-              }}
+              onClick={handleDeleteProject}
               className="ml-auto rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
             >
               Delete project
@@ -148,10 +184,7 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
                       name={f.name}
                       mimeType={f.mimeType}
                       previewUrl={f.mimeType.startsWith("image/") ? `data:${f.mimeType};base64,${f.data}` : undefined}
-                      onRemove={() => {
-                        removeFileFromProject(project.id, topic, f.id);
-                        onChanged();
-                      }}
+                      onRemove={() => handleRemoveFile(topic, f.id)}
                     />
                   ))}
                 </div>
@@ -167,10 +200,7 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
                       Saved chat · {formatDate(chat.savedAt)} · {chat.messages.length} messages
                     </button>
                     <button
-                      onClick={() => {
-                        removeChatFromProject(project.id, topic, chat.id);
-                        onChanged();
-                      }}
+                      onClick={() => handleRemoveChat(topic, chat.id)}
                       className="text-xs text-slate-400 hover:text-red-500"
                     >
                       Remove
@@ -213,10 +243,7 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
                       Quiz result · {quiz.score}/{quiz.questions.length} · {quiz.difficulty} · {formatDate(quiz.savedAt)}
                     </button>
                     <button
-                      onClick={() => {
-                        removeQuizFromProject(project.id, topic, quiz.id);
-                        onChanged();
-                      }}
+                      onClick={() => handleRemoveQuiz(topic, quiz.id)}
                       className="text-xs text-slate-400 hover:text-red-500"
                     >
                       Remove
