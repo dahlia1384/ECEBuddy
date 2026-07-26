@@ -13,6 +13,7 @@ import {
 } from "../storage";
 import { fileToAttachment } from "../fileUtils";
 import AttachmentChip from "./AttachmentChip";
+import ProjectTopicChat from "./ProjectTopicChat";
 
 interface Props {
   project: Project;
@@ -189,6 +190,8 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
                   ))}
                 </div>
               )}
+
+              <ProjectTopicChat topic={topic} files={data.files} />
 
               {data.chats.map((chat) => (
                 <div key={chat.id} className="rounded-lg border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
