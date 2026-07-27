@@ -52,8 +52,11 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Username</label>
+            <label htmlFor="username" className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+              Username
+            </label>
             <input
+              id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
@@ -62,8 +65,11 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Password</label>
+            <label htmlFor="password" className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+              Password
+            </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

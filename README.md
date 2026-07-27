@@ -70,17 +70,22 @@ Require a signed-in session (cookie-based):
 npm test
 ```
 
-Runs both workspaces' Vitest suites (`server` then `client`).
+Runs both workspaces' Vitest suites (`server` then `client`) — 132 tests total.
 
-- **Server** (`server/src/**/*.test.ts`) — Supertest against a real `Express` app
-  (`createApp()` from `server/src/app.ts`) with an isolated temp-file SQLite database
-  per test file (no shared state, no network calls). The Gemini client (`@google/genai`)
-  is mocked, so tests never hit the real API. Covers password hashing, the full
-  signup/login/logout/me flow, request validation on `/api/chat` and `/api/quiz`,
-  and `/api/projects` CRUD + per-user ownership isolation.
-- **Client** (`client/src/*.test.ts`) — Vitest + jsdom. Covers attachment
-  validation/encoding (`fileUtils.ts`) and the server-backed projects API layer
-  (`storage.ts`), with `fetch` mocked.
+- **Server** (73 tests, `server/src/**/*.test.ts`) — Supertest against a real `Express`
+  app (`createApp()` from `server/src/app.ts`) with an isolated temp-file SQLite
+  database per test file (no shared state, no network calls). The Gemini client
+  (`@google/genai`) is mocked, so tests never hit the real API. Covers password
+  hashing, the full signup/login/logout/me flow, request validation on `/api/chat`
+  and `/api/quiz` (attachments, topics, difficulty/count clamping), `/api/projects`
+  CRUD + per-user ownership isolation, the public `/api/health` and `/api/topics`
+  endpoints, and the SQLite schema itself (unique usernames, cascading deletes).
+- **Client** (59 tests, `client/src/**/*.test.{ts,tsx}`) — Vitest + jsdom +
+  Testing Library. Covers the `fetch`-based API layers (`api.ts`, `storage.ts`),
+  attachment validation/encoding (`fileUtils.ts`), auth state management
+  (`AuthContext.tsx`), and component behavior (`LoginPage`, `ChatWindow`,
+  `QuizPanel`, `AttachmentChip`, `TopicSelector`) — sending messages, scoring
+  quizzes, answer locking, and error states, all with the network mocked.
 
 ## Notes
 

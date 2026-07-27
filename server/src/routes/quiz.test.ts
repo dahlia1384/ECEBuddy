@@ -68,4 +68,27 @@ describe("POST /api/quiz", () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("Model did not return valid JSON for the quiz.");
   });
+
+  it("falls back to intermediate for an unrecognized difficulty value", async () => {
+    await agent.post("/api/quiz").send({ topic: "Circuit Analysis", difficulty: "impossible" });
+    expect(mockGenerateQuiz).toHaveBeenCalledWith("Circuit Analysis", "intermediate", 5);
+  });
+
+  it("falls back to 5 for a zero or negative count", async () => {
+    await agent.post("/api/quiz").send({ topic: "Circuit Analysis", count: 0 });
+    expect(mockGenerateQuiz).toHaveBeenLastCalledWith("Circuit Analysis", "intermediate", 5);
+
+    await agent.post("/api/quiz").send({ topic: "Circuit Analysis", count: -3 });
+    expect(mockGenerateQuiz).toHaveBeenLastCalledWith("Circuit Analysis", "intermediate", 5);
+  });
+
+  it("falls back to 5 for a non-integer count", async () => {
+    await agent.post("/api/quiz").send({ topic: "Circuit Analysis", count: 3.5 });
+    expect(mockGenerateQuiz).toHaveBeenLastCalledWith("Circuit Analysis", "intermediate", 5);
+  });
+
+  it("accepts a count at the upper bound of 10", async () => {
+    await agent.post("/api/quiz").send({ topic: "Circuit Analysis", count: 10 });
+    expect(mockGenerateQuiz).toHaveBeenLastCalledWith("Circuit Analysis", "intermediate", 10);
+  });
 });

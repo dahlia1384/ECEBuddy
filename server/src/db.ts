@@ -15,6 +15,7 @@ function resolveDbPath(): string {
 
 export const db = new Database(resolveDbPath());
 db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

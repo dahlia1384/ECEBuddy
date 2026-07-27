@@ -124,4 +124,105 @@ describe("/api/projects", () => {
     const list = await alice.get("/api/projects");
     expect(list.body.projects.some((p: { id: string }) => p.id === projectId)).toBe(false);
   });
+
+  it("404s for a project id that never existed", async () => {
+    const res = await alice.delete("/api/projects/00000000-0000-0000-0000-000000000000");
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects a project name that is only whitespace", async () => {
+    const res = await alice.post("/api/projects").send({ name: "   " });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects adding files without a topic or with a non-array files field", async () => {
+    const created = await alice.post("/api/projects").send({ name: "Bad file payloads" });
+    const projectId = created.body.project.id;
+
+    const noTopic = await alice.post(`/api/projects/${projectId}/files`).send({ files: [] });
+    expect(noTopic.status).toBe(400);
+
+    const badFiles = await alice
+      .post(`/api/projects/${projectId}/files`)
+      .send({ topic: "Circuit Analysis", files: "not-an-array" });
+    expect(badFiles.status).toBe(400);
+  });
+
+  it("rejects adding a chat without messages as an array", async () => {
+    const created = await alice.post("/api/projects").send({ name: "Bad chat payloads" });
+    const projectId = created.body.project.id;
+
+    const res = await alice
+      .post(`/api/projects/${projectId}/chats`)
+      .send({ topic: "Circuit Analysis", messages: "not-an-array" });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects adding a quiz without a numeric score", async () => {
+    const created = await alice.post("/api/projects").send({ name: "Bad quiz payloads" });
+    const projectId = created.body.project.id;
+
+    const res = await alice.post(`/api/projects/${projectId}/quizzes`).send({
+      topic: "Circuit Analysis",
+      questions: [{ question: "Q", choices: ["A", "B", "C", "D"], correctIndex: 0, explanation: "E" }],
+      score: "1",
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("requires a topic query param to remove a file, chat, or quiz", async () => {
+    const created = await alice.post("/api/projects").send({ name: "Missing topic query" });
+    const projectId = created.body.project.id;
+
+    expect((await alice.delete(`/api/projects/${projectId}/files/some-id`)).status).toBe(400);
+    expect((await alice.delete(`/api/projects/${projectId}/chats/some-id`)).status).toBe(400);
+    expect((await alice.delete(`/api/projects/${projectId}/quizzes/some-id`)).status).toBe(400);
+  });
+
+  it("removing a nonexistent file/chat/quiz id is a no-op, not an error", async () => {
+    const created = await alice.post("/api/projects").send({ name: "Remove nonexistent" });
+    const projectId = created.body.project.id;
+    const topic = encodeURIComponent("Circuit Analysis");
+
+    const res = await alice.delete(`/api/projects/${projectId}/files/does-not-exist?topic=${topic}`);
+    expect(res.status).toBe(200);
+    expect(res.body.project.topics["Circuit Analysis"].files).toEqual([]);
+  });
+
+  it("removes a saved chat and a saved quiz by id", async () => {
+    const created = await alice.post("/api/projects").send({ name: "Remove chat and quiz" });
+    const projectId = created.body.project.id;
+    const topic = "Circuit Analysis";
+
+    const chatRes = await alice
+      .post(`/api/projects/${projectId}/chats`)
+      .send({ topic, messages: [{ role: "user", content: "hi" }] });
+    const chatId = chatRes.body.project.topics[topic].chats[0].id;
+
+    const quizRes = await alice.post(`/api/projects/${projectId}/quizzes`).send({
+      topic,
+      questions: [{ question: "Q", choices: ["A", "B", "C", "D"], correctIndex: 0, explanation: "E" }],
+      score: 0,
+    });
+    const quizId = quizRes.body.project.topics[topic].quizzes[0].id;
+
+    const afterChatRemoved = await alice.delete(
+      `/api/projects/${projectId}/chats/${chatId}?topic=${encodeURIComponent(topic)}`
+    );
+    expect(afterChatRemoved.body.project.topics[topic].chats).toEqual([]);
+
+    const afterQuizRemoved = await alice.delete(
+      `/api/projects/${projectId}/quizzes/${quizId}?topic=${encodeURIComponent(topic)}`
+    );
+    expect(afterQuizRemoved.body.project.topics[topic].quizzes).toEqual([]);
+  });
+
+  it("lists projects ordered by creation time ascending", async () => {
+    const first = await alice.post("/api/projects").send({ name: "First created" });
+    const second = await alice.post("/api/projects").send({ name: "Second created" });
+
+    const list = await alice.get("/api/projects");
+    const ids = list.body.projects.map((p: { id: string }) => p.id);
+    expect(ids.indexOf(first.body.project.id)).toBeLessThan(ids.indexOf(second.body.project.id));
+  });
 });

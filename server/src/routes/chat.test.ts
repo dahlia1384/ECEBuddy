@@ -100,4 +100,48 @@ describe("POST /api/chat", () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toBe("model is overloaded");
   });
+
+  it("rejects a non-string content field", async () => {
+    const res = await agent.post("/api/chat").send({ messages: [{ role: "user", content: 42 }] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/content must be a string/);
+  });
+
+  it("rejects attachments that isn't an array", async () => {
+    const res = await agent
+      .post("/api/chat")
+      .send({ messages: [{ role: "user", content: "hi", attachments: "not-an-array" }] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/attachments must be an array/);
+  });
+
+  it("rejects an attachment with empty-string data", async () => {
+    const res = await agent.post("/api/chat").send({
+      messages: [{ role: "user", content: "hi", attachments: [{ mimeType: "image/png", data: "" }] }],
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/non-empty base64 string/);
+  });
+
+  it("accepts exactly 4 attachments (the limit, not the error case)", async () => {
+    const attachments = Array.from({ length: 4 }, () => ({ mimeType: "image/png", data: "abc" }));
+    const res = await agent.post("/api/chat").send({ messages: [{ role: "user", content: "hi", attachments }] });
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects messages that aren't an array at all", async () => {
+    const res = await agent.post("/api/chat").send({ messages: "not-an-array" });
+    expect(res.status).toBe(400);
+  });
+
+  it("validates every message in a multi-turn conversation, not just the first", async () => {
+    const res = await agent.post("/api/chat").send({
+      messages: [
+        { role: "user", content: "hi" },
+        { role: "assistant", content: "hello" },
+        { role: "not-a-role", content: "??" },
+      ],
+    });
+    expect(res.status).toBe(400);
+  });
 });
