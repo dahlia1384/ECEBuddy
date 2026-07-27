@@ -19,9 +19,10 @@ export default function HowItWorks() {
       {STEPS.map((step, i) => (
         <div
           key={step.title}
-          className="relative overflow-hidden rounded-xl border border-slate-200 bg-white/70 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/70"
+          style={{ animationDelay: `${i * 80}ms` }}
+          className="group relative animate-fade-slide-up overflow-hidden rounded-xl border border-slate-200 bg-white/70 p-4 backdrop-blur transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/70 dark:hover:border-indigo-800"
         >
-          <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-xs font-bold text-white">
+          <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-xs font-bold text-white shadow-sm transition-transform group-hover:scale-110">
             {i + 1}
           </div>
           <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{step.title}</p>

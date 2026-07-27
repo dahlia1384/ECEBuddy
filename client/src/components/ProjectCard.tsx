@@ -99,10 +99,10 @@ export default function ProjectCard({ project, topics, onChanged }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800">
+    <div className="rounded-xl border border-slate-200 transition-shadow hover:shadow-sm dark:border-slate-800">
       <button
         onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40"
       >
         <div>
           <p className="font-semibold text-slate-800 dark:text-slate-100">{project.name}</p>

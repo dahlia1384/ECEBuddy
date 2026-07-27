@@ -53,30 +53,43 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14">
-        <header className="space-y-4 text-center sm:text-left">
+    <div className="relative min-h-screen overflow-x-hidden">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-400/25 via-fuchsia-400/15 to-transparent blur-3xl animate-float-slow"
+      />
+
+      <div className="relative mx-auto flex max-w-3xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14">
+        <header className="animate-fade-slide-up space-y-5 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-base font-bold text-white shadow-lg shadow-indigo-500/30">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-base font-extrabold text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
                 EB
               </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                <span className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-fuchsia-400">
+              <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-violet-400 dark:to-fuchsia-400">
                   ECEBuddy
                 </span>
               </h1>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <span>{user.username}</span>
+              <span className="font-medium">{user.username}</span>
               <button
                 onClick={() => logout()}
-                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-800 dark:hover:border-indigo-700 dark:hover:text-indigo-400"
+                className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium transition-all hover:-translate-y-px hover:border-indigo-300 hover:text-indigo-600 hover:shadow-sm active:translate-y-0 dark:border-slate-800 dark:hover:border-indigo-700 dark:hover:text-indigo-400"
               >
                 Log out
               </button>
             </div>
           </div>
+
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200/60 bg-indigo-50/80 px-3 py-1 text-xs font-medium text-indigo-600 backdrop-blur dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-pulse-dot rounded-full bg-indigo-500" />
+            </span>
+            AI-powered ECE study tool
+          </div>
+
           <p className="mx-auto max-w-xl text-sm text-slate-500 sm:mx-0 sm:text-base dark:text-slate-400">
             Your AI study partner for Electrical &amp; Computer Engineering coursework —
             ask questions, attach photos of your work, and practice with generated quizzes.
@@ -86,7 +99,7 @@ export default function App() {
               {topics.slice(0, 6).map((t) => (
                 <span
                   key={t}
-                  className="rounded-full border border-slate-200 bg-white/60 px-2.5 py-1 text-xs text-slate-500 backdrop-blur dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400"
+                  className="rounded-full border border-slate-200 bg-white/60 px-2.5 py-1 text-xs text-slate-500 backdrop-blur transition-colors hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400"
                 >
                   {t}
                 </span>
@@ -105,13 +118,16 @@ export default function App() {
             <TopicSelector topics={topics} selected={topic} onSelect={setTopic} />
           )}
 
-          <div className="inline-flex rounded-lg border border-slate-200 bg-white/80 p-1 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
+          <div className="relative inline-grid grid-cols-2 rounded-lg border border-slate-200 bg-white/80 p-1 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
+            <div
+              className={`absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-md bg-gradient-to-br from-indigo-600 to-violet-600 shadow-sm transition-transform duration-300 ease-out ${
+                mode === "quiz" ? "translate-x-full" : "translate-x-0"
+              }`}
+            />
             <button
               onClick={() => setMode("chat")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                mode === "chat"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+              className={`relative z-10 inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                mode === "chat" ? "text-white" : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
               }`}
             >
               <ChatIcon />
@@ -119,10 +135,8 @@ export default function App() {
             </button>
             <button
               onClick={() => setMode("quiz")}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                mode === "quiz"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+              className={`relative z-10 inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                mode === "quiz" ? "text-white" : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
               }`}
             >
               <QuizIcon />

@@ -14,6 +14,24 @@ interface Props {
   topic: string;
 }
 
+function AssistantAvatar() {
+  return (
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 text-[10px] font-bold text-white shadow-sm">
+      EB
+    </div>
+  );
+}
+
+function TypingDots() {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s] dark:bg-slate-500" />
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s] dark:bg-slate-500" />
+      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 dark:bg-slate-500" />
+    </span>
+  );
+}
+
 export default function ChatWindow({ topic }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -97,65 +115,78 @@ export default function ChatWindow({ topic }: Props) {
           />
         </div>
       )}
-      <div className="flex h-[420px] flex-col gap-3 overflow-y-auto pr-1">
+      <div className="flex h-[420px] flex-col gap-4 overflow-y-auto pr-1">
         {messages.length === 0 && (
-          <p className="m-auto text-center text-sm text-slate-400 dark:text-slate-500">
-            Ask a question about {topic.toLowerCase()} to get started — you can attach photos of your
-            work or PDFs too.
-          </p>
+          <div className="m-auto flex max-w-xs flex-col items-center gap-3 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/15 to-fuchsia-500/15 text-indigo-500 dark:text-indigo-400">
+              <ChatIconLarge />
+            </div>
+            <p className="text-sm text-slate-400 dark:text-slate-500">
+              Ask a question about {topic.toLowerCase()} to get started — you can attach photos of
+              your work or PDFs too.
+            </p>
+          </div>
         )}
         {messages.map((m, i) => (
           <div
             key={i}
-            className={`flex max-w-[85%] flex-col gap-2 rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-              m.role === "user"
-                ? "self-end rounded-br-sm bg-indigo-600 text-white"
-                : "self-start rounded-bl-sm border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-100"
-            }`}
+            className={`animate-fade-slide-up flex items-end gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}
           >
-            {m.attachments && m.attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {m.attachments.map((a, ai) =>
-                  a.mimeType.startsWith("image/") ? (
-                    <img
-                      key={ai}
-                      src={`data:${a.mimeType};base64,${a.data}`}
-                      alt={a.name ?? "attachment"}
-                      className="h-24 w-24 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div
-                      key={ai}
-                      className="flex items-center gap-2 rounded-lg bg-white/20 px-3 py-1.5 text-xs"
-                    >
-                      <span>{a.name ?? "document.pdf"}</span>
-                    </div>
-                  )
-                )}
-              </div>
-            )}
-            {m.content &&
-              (m.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-pre:my-2">
-                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
-                    {m.content}
-                  </ReactMarkdown>
+            {m.role === "assistant" && <AssistantAvatar />}
+            <div
+              className={`flex max-w-[80%] flex-col gap-2 rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+                m.role === "user"
+                  ? "rounded-br-md bg-gradient-to-br from-indigo-600 to-violet-600 text-white"
+                  : "rounded-bl-md border border-slate-200 bg-slate-50 text-slate-800 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-100"
+              }`}
+            >
+              {m.attachments && m.attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {m.attachments.map((a, ai) =>
+                    a.mimeType.startsWith("image/") ? (
+                      <img
+                        key={ai}
+                        src={`data:${a.mimeType};base64,${a.data}`}
+                        alt={a.name ?? "attachment"}
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div
+                        key={ai}
+                        className="flex items-center gap-2 rounded-lg bg-white/20 px-3 py-1.5 text-xs"
+                      >
+                        <span>{a.name ?? "document.pdf"}</span>
+                      </div>
+                    )
+                  )}
                 </div>
-              ) : (
-                <span className="whitespace-pre-wrap">{m.content}</span>
-              ))}
+              )}
+              {m.content &&
+                (m.role === "assistant" ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-headings:my-2 prose-ul:my-2 prose-ol:my-2 prose-pre:my-2">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <span className="whitespace-pre-wrap">{m.content}</span>
+                ))}
+            </div>
           </div>
         ))}
         {loading && (
-          <div className="self-start rounded-2xl rounded-bl-sm border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-400 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-500">
-            Thinking…
+          <div className="animate-fade-slide-up flex items-end gap-2">
+            <AssistantAvatar />
+            <div className="rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/60">
+              <TypingDots />
+            </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
+        <p className="animate-fade-slide-up rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-400">
           {error}
         </p>
       )}
@@ -192,7 +223,7 @@ export default function ChatWindow({ topic }: Props) {
             disabled={pendingFiles.length >= MAX_ATTACHMENTS}
             title="Attach photos or files"
             aria-label="Attach photos or files"
-            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-indigo-300 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:text-indigo-400"
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-all hover:-translate-y-px hover:border-indigo-300 hover:text-indigo-600 hover:shadow-sm active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-800 dark:text-slate-400 dark:hover:border-indigo-700 dark:hover:text-indigo-400"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
@@ -209,12 +240,20 @@ export default function ChatWindow({ topic }: Props) {
           <button
             onClick={handleSend}
             disabled={loading || (!input.trim() && pendingFiles.length === 0)}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-px hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
           >
             Send
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+function ChatIconLarge() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-5 w-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+    </svg>
   );
 }
