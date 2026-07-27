@@ -3,11 +3,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, "..", "data");
-fs.mkdirSync(dataDir, { recursive: true });
+function resolveDbPath(): string {
+  const override = process.env.DB_PATH;
+  if (override) return override;
 
-export const db = new Database(path.join(dataDir, "ecebuddy.db"));
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const dataDir = path.join(__dirname, "..", "data");
+  fs.mkdirSync(dataDir, { recursive: true });
+  return path.join(dataDir, "ecebuddy.db");
+}
+
+export const db = new Database(resolveDbPath());
 db.pragma("journal_mode = WAL");
 
 db.exec(`

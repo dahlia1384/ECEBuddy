@@ -64,6 +64,24 @@ Require a signed-in session (cookie-based):
 - `/api/projects` — CRUD for projects and the files/chats/quizzes saved under them,
   scoped to the signed-in user and stored in `server/data/ecebuddy.db` (SQLite).
 
+## Testing
+
+```bash
+npm test
+```
+
+Runs both workspaces' Vitest suites (`server` then `client`).
+
+- **Server** (`server/src/**/*.test.ts`) — Supertest against a real `Express` app
+  (`createApp()` from `server/src/app.ts`) with an isolated temp-file SQLite database
+  per test file (no shared state, no network calls). The Gemini client (`@google/genai`)
+  is mocked, so tests never hit the real API. Covers password hashing, the full
+  signup/login/logout/me flow, request validation on `/api/chat` and `/api/quiz`,
+  and `/api/projects` CRUD + per-user ownership isolation.
+- **Client** (`client/src/*.test.ts`) — Vitest + jsdom. Covers attachment
+  validation/encoding (`fileUtils.ts`) and the server-backed projects API layer
+  (`storage.ts`), with `fetch` mocked.
+
 ## Notes
 
 ECEBuddy is a study aid, not an exam-answer service — the tutoring prompt is written to
