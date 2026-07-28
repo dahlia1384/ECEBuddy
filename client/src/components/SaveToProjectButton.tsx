@@ -29,9 +29,9 @@ export default function SaveToProjectButton({ onSave, label = "Save to project" 
   }
 
   async function handlePick(project: Project) {
-    setOpen(false);
     try {
       await onSave(project);
+      setOpen(false);
       flashSaved();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");
