@@ -18,6 +18,14 @@ const clientDistPath = path.join(__dirname, "..", "..", "client", "dist");
 export function createApp() {
   const app = express();
 
+  // Trust the first hop's X-Forwarded-For (Render, and most PaaS hosts, sit
+  // behind exactly one reverse proxy). Without this, express-rate-limit
+  // either keys rate limits off the proxy's IP for every request (limiting
+  // all users together) or refuses to start in production.
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   app.use(cors({ origin: true, credentials: true }));
   app.use(cookieParser());
   app.use(express.json({ limit: "40mb" }));

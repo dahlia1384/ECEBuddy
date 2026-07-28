@@ -9,6 +9,7 @@ import {
   readSession,
   requireAuth,
 } from "../auth.js";
+import { signupLimiter } from "../rateLimit.js";
 
 export const authRouter = Router();
 
@@ -21,7 +22,7 @@ interface UserRow {
 
 const USERNAME_RE = /^[a-zA-Z0-9_.-]{3,32}$/;
 
-authRouter.post("/signup", async (req, res) => {
+authRouter.post("/signup", signupLimiter, async (req, res) => {
   const { username, password } = req.body as { username?: string; password?: string };
 
   if (typeof username !== "string" || !USERNAME_RE.test(username)) {
