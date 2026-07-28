@@ -87,6 +87,44 @@ Runs both workspaces' Vitest suites (`server` then `client`) — 132 tests total
   `QuizPanel`, `AttachmentChip`, `TopicSelector`) — sending messages, scoring
   quizzes, answer locking, and error states, all with the network mocked.
 
+## Docker
+
+A single multi-stage `Dockerfile` at the repo root builds the client, builds the
+server, and serves both from one container (Express serves the API under `/api/*`
+and the built React app for everything else).
+
+```bash
+docker build -t ecebuddy .
+docker run -p 3001:3001 \
+  -e GEMINI_API_KEY=your-key \
+  -e JWT_SECRET=a-long-random-string \
+  ecebuddy
+```
+
+Requires Node 22+ (pinned in the image) — `better-sqlite3`'s prebuilt binaries need
+it, and its bundled `linux-arm64` prebuild also doesn't match Debian slim's glibc, so
+the Dockerfile deletes it and compiles from source instead (see the comment above
+that step).
+
+## Deploying for free (Render)
+
+`render.yaml` is a [Render](https://render.com) Blueprint that deploys the Dockerfile
+as a free web service:
+
+1. Push this repo to GitHub (already done if you're reading this from the repo).
+2. In the Render dashboard: **New +** → **Blueprint**, connect this GitHub repo.
+   Render detects `render.yaml` automatically.
+3. When prompted, set `GEMINI_API_KEY` (your key from Google AI Studio). `JWT_SECRET`
+   is generated for you.
+4. Deploy. Render gives you a free `https://<name>.onrender.com` URL.
+
+**Two free-tier caveats worth knowing before you rely on this:**
+- Free web services spin down after ~15 minutes idle and take a few seconds to wake
+  back up on the next request.
+- Free services have **no persistent disk** — the SQLite file (accounts, saved
+  projects) resets on every redeploy and can reset on restart. Fine for a demo link;
+  not durable storage. A persistent disk requires a paid Render plan.
+
 ## Notes
 
 ECEBuddy is a study aid, not an exam-answer service — the tutoring prompt is written to
